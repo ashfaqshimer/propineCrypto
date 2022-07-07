@@ -5,17 +5,26 @@ const {
 	getPortfolioByToken,
 	getPortfolioByDate,
 	getPortfolioByTokenAndDate,
+	validateInput,
 } = require('./utils');
 const argv = yargs(hideBin(process.argv)).argv;
 
 console.log(argv);
 
-if (argv.token && argv.date) {
-	getPortfolioByTokenAndDate(argv.token, argv.date);
-} else if (argv.token) {
-	getPortfolioByToken(argv.token);
-} else if (argv.date) {
-	getPortfolioByDate(argv.date);
-} else {
-	getLatestPortfolio();
+const { token, date } = argv;
+
+try {
+	validateInput(token, date);
+
+	if (token && date) {
+		getPortfolioByTokenAndDate(token, date);
+	} else if (token) {
+		getPortfolioByToken(token);
+	} else if (date) {
+		getPortfolioByDate(date);
+	} else {
+		getLatestPortfolio();
+	}
+} catch (error) {
+	console.log(error.message);
 }

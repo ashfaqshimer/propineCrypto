@@ -1,7 +1,7 @@
-exports.convertDateToTimestamp = (date) => {
+exports.convertDateToUnixTimestamp = (date) => {
 	const splitDate = date.split('/');
 	const convertedDate = new Date(splitDate[2], splitDate[1] - 1, splitDate[0]);
-	return convertedDate.getTime();
+	return convertedDate.getTime() / 1000;
 };
 
 exports.convertTimestampToDate = (timestamp) => {

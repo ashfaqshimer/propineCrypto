@@ -2,7 +2,10 @@ const csv = require('csv-parser');
 const fs = require('fs');
 const { TRANSACTIONS_PATH } = require('../constants');
 const { getConversionRate } = require('../services/cryptoCompare');
-const { convertTimestampToDate } = require('./dateConversion');
+const {
+	convertTimestampToDate,
+	convertDateToUnixTimestamp,
+} = require('./dateConversion');
 
 exports.getLatestPortfolio = async () => {
 	console.log('Getting latest portfolio values');
@@ -22,46 +25,65 @@ exports.getLatestPortfolio = async () => {
 		});
 };
 
-exports.getPortfolioByDate = (date) => {
-	const splitDate = date.split('/').map((value) => parseInt(value));
-
-	console.log('Getting portfolio for date ', date);
-	const results = [];
+exports.getPortfolioByDate = (thresholdDate) => {
+	const timestampThreshold = convertDateToUnixTimestamp(thresholdDate);
+	let portfolio = {};
 
 	console.log('Reading CSV..');
-	const readStream = fs
-		.createReadStream(TRANSACTIONS_PATH)
+	fs.createReadStream('./_data/test.csv')
 		.pipe(csv())
 		.on('data', (data) => {
-			const transactionDate = convertTimestampToDate(data.timestamp);
-
-			if (transactionDate.year < splitDate[2]) {
-				readStream.destroy();
-			}
-
-			if (transactionDate.year === splitDate[2]) {
-				if (transactionDate.month < splitDate[0]) {
-					readStream.destroy();
-				}
-				if (transactionDate.month === splitDate[0]) {
-					if (transactionDate.date < splitDate[1]) {
-						readStream.destroy();
-					}
-					if (transactionDate.date === splitDate[1]) {
-						results.push(data);
-					}
-				}
+			if (data.timestamp < timestampThreshold) {
+				portfolio = calculatePortfolio(portfolio, data);
 			}
 		})
 		.on('close', async () => {
-			if (results.length) {
-				const portfolio = await calculatePortfolio(results);
-				console.log(portfolio);
-			} else {
-				console.log('No results found');
-			}
+			console.log('Finished reading data. Portfolio amounts:');
+			console.log(portfolio);
+			portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
+			console.log(portfolio);
 		});
 };
+// exports.getPortfolioByDate = (date) => {
+// const splitDate = date.split('/').map((value) => parseInt(value));
+
+// 	console.log('Getting portfolio for date ', date);
+// 	const results = [];
+
+// 	console.log('Reading CSV..');
+// 	const readStream = fs
+// 		.createReadStream(TRANSACTIONS_PATH)
+// 		.pipe(csv())
+// 		.on('data', (data) => {
+// 			const transactionDate = convertTimestampToDate(data.timestamp);
+
+// 			if (transactionDate.year < splitDate[2]) {
+// 				readStream.destroy();
+// 			}
+
+// 			if (transactionDate.year === splitDate[2]) {
+// 				if (transactionDate.month < splitDate[0]) {
+// 					readStream.destroy();
+// 				}
+// 				if (transactionDate.month === splitDate[0]) {
+// 					if (transactionDate.date < splitDate[1]) {
+// 						readStream.destroy();
+// 					}
+// 					if (transactionDate.date === splitDate[1]) {
+// 						results.push(data);
+// 					}
+// 				}
+// 			}
+// 		})
+// 		.on('close', async () => {
+// 			if (results.length) {
+// 				const portfolio = await calculatePortfolio(results);
+// 				console.log(portfolio);
+// 			} else {
+// 				console.log('No results found');
+// 			}
+// 		});
+// };
 
 exports.getPortfolioByToken = (token) => {
 	console.log(`Getting latest portfolio for ${token}`);

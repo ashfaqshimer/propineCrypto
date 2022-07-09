@@ -12,7 +12,6 @@ exports.getLatestPortfolio = async () => {
 	fs.createReadStream(TRANSACTIONS_PATH)
 		.pipe(csv())
 		.on('data', (data) => {
-			// results.push(data);
 			portfolio = calculatePortfolio(portfolio, data);
 		})
 		.on('close', async () => {
@@ -66,23 +65,21 @@ exports.getPortfolioByDate = (date) => {
 
 exports.getPortfolioByToken = (token) => {
 	console.log(`Getting latest portfolio for ${token}`);
-	const results = [];
+	let portfolio = {};
 
 	console.log('Reading CSV..');
 	fs.createReadStream(TRANSACTIONS_PATH)
 		.pipe(csv())
 		.on('data', (data) => {
 			if (data.token === token) {
-				results.push(data);
+				portfolio = calculatePortfolio(portfolio, data);
 			}
 		})
 		.on('close', async () => {
-			if (results.length) {
-				const portfolio = await calculatePortfolio(results);
-				console.log(portfolio);
-			} else {
-				console.log('No results found');
-			}
+			console.log('Finished reading data. Portfolio amounts: ');
+			console.log(portfolio);
+			portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
+			console.log(portfolio);
 		});
 };
 

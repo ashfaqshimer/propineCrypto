@@ -4,21 +4,22 @@ const { TRANSACTIONS_PATH } = require('../constants');
 const { getConversionRate } = require('../services/cryptoCompare');
 const { convertTimestampToDate } = require('./dateConversion');
 
-exports.getLatestPortfolio = () => {
-	console.log('Return latest portfolio');
-	const results = [];
+exports.getLatestPortfolio = async () => {
+	console.log('Getting latest portfolio values');
+	let portfolio = {};
 
-	console.log('Loading CSV..');
-	const readStream = fs
-		.createReadStream(TRANSACTIONS_PATH)
+	console.log('Reading CSV..');
+	fs.createReadStream(TRANSACTIONS_PATH)
 		.pipe(csv())
 		.on('data', (data) => {
-			results.push(data);
-			readStream.destroy();
+			// results.push(data);
+			portfolio = calculatePortfolio(portfolio, data);
 		})
-		.on('close', () => {
-			console.log('Displaying latest result.');
-			console.log(results);
+		.on('close', async () => {
+			console.log('Finished reading data. Portfolio amounts:');
+			console.log(portfolio);
+			portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
+			console.log(portfolio);
 		});
 };
 
@@ -64,20 +65,24 @@ exports.getPortfolioByDate = (date) => {
 };
 
 exports.getPortfolioByToken = (token) => {
-	console.log('Getting latest portfolio for ', token);
+	console.log(`Getting latest portfolio for ${token}`);
 	const results = [];
 
-	console.log('Loading CSV..');
-	const readStream = fs
-		.createReadStream(TRANSACTIONS_PATH)
+	console.log('Reading CSV..');
+	fs.createReadStream(TRANSACTIONS_PATH)
 		.pipe(csv())
 		.on('data', (data) => {
-			results.push(data);
-			readStream.destroy();
+			if (data.token === token) {
+				results.push(data);
+			}
 		})
-		.on('close', () => {
-			console.log('Displaying latest result.');
-			console.log(results);
+		.on('close', async () => {
+			if (results.length) {
+				const portfolio = await calculatePortfolio(results);
+				console.log(portfolio);
+			} else {
+				console.log('No results found');
+			}
 		});
 };
 
@@ -122,31 +127,65 @@ exports.getPortfolioByTokenAndDate = (token, date) => {
 		});
 };
 
-const calculatePortfolio = async (transactions) => {
-	const transactionsObject = transactions.reduce((accumulator, transaction) => {
-		const { token, transaction_type } = transaction;
-		const amount = parseFloat(transaction.amount);
-		if (!accumulator[token]) {
-			accumulator[token] = 0;
-		}
+// const calculatePortfolio = async (transactions) => {
+// 	const transactionsObject = transactions.reduce((accumulator, transaction) => {
+// 		const { token, transaction_type } = transaction;
+// 		const amount = parseFloat(transaction.amount);
+// 		if (!accumulator[token]) {
+// 			accumulator[token] = 0;
+// 		}
 
-		if (transaction_type === 'DEPOSIT') {
-			accumulator[token] = accumulator[token] + amount;
-		}
-		if (transaction_type === 'WITHDRAWAL') {
-			accumulator[token] = accumulator[token] - amount;
-		}
+// 		if (transaction_type === 'DEPOSIT') {
+// 			accumulator[token] = accumulator[token] + amount;
+// 		}
+// 		if (transaction_type === 'WITHDRAWAL') {
+// 			accumulator[token] = accumulator[token] - amount;
+// 		}
 
-		return accumulator;
-	}, {});
+// 		return accumulator;
+// 	}, {});
 
-	const tokens = Object.keys(transactionsObject).join(',');
+// 	const tokens = Object.keys(transactionsObject).join(',');
 
-	const exchangeRate = await getConversionRate(tokens, 'USD');
+// 	const exchangeRate = await getConversionRate(tokens, 'USD');
 
-	for (const token in transactionsObject) {
-		transactionsObject[token] =
-			transactionsObject[token] * exchangeRate[token].USD;
+// 	for (const token in transactionsObject) {
+// 		transactionsObject[token] =
+// 			transactionsObject[token] * exchangeRate[token].USD;
+// 	}
+// 	return transactionsObject;
+// };
+
+const calculatePortfolio = (currentPortfolio, transaction) => {
+	const updatedPortfolio = { ...currentPortfolio };
+
+	const { token, transaction_type } = transaction;
+	const amount = parseFloat(transaction.amount);
+	if (!updatedPortfolio[token]) {
+		updatedPortfolio[token] = 0;
 	}
-	return transactionsObject;
+
+	if (transaction_type === 'DEPOSIT') {
+		updatedPortfolio[token] = updatedPortfolio[token] + amount;
+	}
+	if (transaction_type === 'WITHDRAWAL') {
+		updatedPortfolio[token] = updatedPortfolio[token] - amount;
+	}
+
+	return updatedPortfolio;
+};
+
+const calculateCurrencyPortfolio = async (currentPortfolio, currency) => {
+	console.log(`Calculating ${currency} value of portfolio..`);
+
+	const updatedPortfolio = { ...currentPortfolio };
+
+	const tokens = Object.keys(updatedPortfolio).join(',');
+
+	const exchangeRate = await getConversionRate(tokens, currency);
+
+	for (const token in updatedPortfolio) {
+		updatedPortfolio[token] = updatedPortfolio[token] * exchangeRate[token].USD;
+	}
+	return updatedPortfolio;
 };

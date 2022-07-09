@@ -27,6 +27,5 @@ try {
 		getLatestPortfolio();
 	}
 } catch (error) {
-	console.log('🚀 ~ file: index.js ~ line 30 ~ error', error);
 	console.log(error.message);
 }

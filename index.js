@@ -8,6 +8,8 @@ const {
 } = require('./utils/portfolioOps');
 const { validateInput } = require('./utils/validations');
 
+require('dotenv').config();
+
 const argv = yargs(hideBin(process.argv)).argv;
 
 const { token, date } = argv;
@@ -25,5 +27,6 @@ try {
 		getLatestPortfolio();
 	}
 } catch (error) {
+	console.log('🚀 ~ file: index.js ~ line 30 ~ error', error);
 	console.log(error.message);
 }

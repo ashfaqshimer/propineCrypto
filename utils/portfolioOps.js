@@ -1,10 +1,8 @@
 const csv = require('csv-parser');
 const fs = require('fs');
 const { TRANSACTIONS_PATH } = require('../constants');
-const {
-	convertDateToTimestamp,
-	convertTimestampToDate,
-} = require('./dateConversion');
+const { getConversionRate } = require('../services/cryptoCompare');
+const { convertTimestampToDate } = require('./dateConversion');
 
 exports.getLatestPortfolio = () => {
 	console.log('Return latest portfolio');
@@ -30,7 +28,7 @@ exports.getPortfolioByDate = (date) => {
 	console.log('Getting portfolio for date ', date);
 	const results = [];
 
-	console.log('Loading CSV..');
+	console.log('Reading CSV..');
 	const readStream = fs
 		.createReadStream(TRANSACTIONS_PATH)
 		.pipe(csv())
@@ -55,9 +53,10 @@ exports.getPortfolioByDate = (date) => {
 				}
 			}
 		})
-		.on('close', () => {
+		.on('close', async () => {
 			if (results.length) {
-				console.log(results);
+				const portfolio = await calculatePortfolio(results);
+				console.log(portfolio);
 			} else {
 				console.log('No results found');
 			}
@@ -113,11 +112,41 @@ exports.getPortfolioByTokenAndDate = (token, date) => {
 				}
 			}
 		})
-		.on('close', () => {
+		.on('close', async () => {
 			if (results.length) {
-				console.log(results);
+				const portfolio = await calculatePortfolio(results);
+				console.log(portfolio);
 			} else {
 				console.log('No results found');
 			}
 		});
+};
+
+const calculatePortfolio = async (transactions) => {
+	const transactionsObject = transactions.reduce((accumulator, transaction) => {
+		const { token, transaction_type } = transaction;
+		const amount = parseFloat(transaction.amount);
+		if (!accumulator[token]) {
+			accumulator[token] = 0;
+		}
+
+		if (transaction_type === 'DEPOSIT') {
+			accumulator[token] = accumulator[token] + amount;
+		}
+		if (transaction_type === 'WITHDRAWAL') {
+			accumulator[token] = accumulator[token] - amount;
+		}
+
+		return accumulator;
+	}, {});
+
+	const tokens = Object.keys(transactionsObject).join(',');
+
+	const exchangeRate = await getConversionRate(tokens, 'USD');
+
+	for (const token in transactionsObject) {
+		transactionsObject[token] =
+			transactionsObject[token] * exchangeRate[token].USD;
+	}
+	return transactionsObject;
 };

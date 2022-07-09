@@ -6,7 +6,6 @@ const {
 	getPortfolioByDate,
 	getPortfolioByTokenAndDate,
 } = require('./utils/portfolioOps');
-const parseCSV = require('./utils/parseCSV');
 const { validateInput } = require('./utils/validations');
 
 const argv = yargs(hideBin(process.argv)).argv;
@@ -17,8 +16,7 @@ const { token, date } = argv;
 
 try {
 	validateInput(token, date);
-
-	// parseCSV('./_data/transactions.csv');
+	console.log('🚀 ~ file: index.js ~ line 20 ~ date', date);
 
 	if (token && date) {
 		getPortfolioByTokenAndDate(token, date);

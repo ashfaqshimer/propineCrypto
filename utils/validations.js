@@ -1,5 +1,6 @@
 exports.validateInput = (token, date) => {
-	console.log(typeof token);
+	console.log(date);
+
 	if (token && typeof token !== 'number') {
 		throw new Error('Token must be a number');
 	}
@@ -7,7 +8,7 @@ exports.validateInput = (token, date) => {
 		throw new Error('Date must be a string');
 	}
 
-	if (date && !isValidDate(date)) {
+	if ((date && !isValidDate(date)) || date === '') {
 		throw new Error('Date must be a string in the form MM/DD/YYYY');
 	}
 	return true;
@@ -15,6 +16,9 @@ exports.validateInput = (token, date) => {
 
 // Validates that the input string is a valid date formatted as "mm/dd/yyyy"
 function isValidDate(dateString) {
+	if (!dateString) {
+		return false;
+	}
 	// First check for the pattern
 	if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) return false;
 

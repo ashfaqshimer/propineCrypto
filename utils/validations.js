@@ -1,8 +1,6 @@
 exports.validateInput = (token, date) => {
-	console.log(date);
-
-	if (token && typeof token !== 'number') {
-		throw new Error('Token must be a number');
+	if (token && typeof token !== 'string') {
+		throw new Error('Token must be a string');
 	}
 	if (date && typeof date !== 'string') {
 		throw new Error('Date must be a string');

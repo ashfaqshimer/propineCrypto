@@ -84,4 +84,40 @@ exports.getPortfolioByToken = (token) => {
 
 exports.getPortfolioByTokenAndDate = (token, date) => {
 	console.log(`Getting portfolio on date ${date} for token ${token}`);
+	const splitDate = date.split('/').map((value) => parseInt(value));
+	const results = [];
+
+	const readStream = fs
+		.createReadStream(TRANSACTIONS_PATH)
+		.pipe(csv())
+		.on('data', (data) => {
+			const transactionDate = convertTimestampToDate(data.timestamp);
+
+			if (transactionDate.year < splitDate[2]) {
+				readStream.destroy();
+			}
+
+			if (transactionDate.year === splitDate[2]) {
+				if (transactionDate.month < splitDate[0]) {
+					readStream.destroy();
+				}
+				if (transactionDate.month === splitDate[0]) {
+					if (transactionDate.date < splitDate[1]) {
+						readStream.destroy();
+					}
+					if (transactionDate.date === splitDate[1]) {
+						if (data.token === token) {
+							results.push(data);
+						}
+					}
+				}
+			}
+		})
+		.on('close', () => {
+			if (results.length) {
+				console.log(results);
+			} else {
+				console.log('No results found');
+			}
+		});
 };

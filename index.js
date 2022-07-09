@@ -10,13 +10,10 @@ const { validateInput } = require('./utils/validations');
 
 const argv = yargs(hideBin(process.argv)).argv;
 
-console.log(argv);
-
 const { token, date } = argv;
 
 try {
 	validateInput(token, date);
-	console.log('🚀 ~ file: index.js ~ line 20 ~ date', date);
 
 	if (token && date) {
 		getPortfolioByTokenAndDate(token, date);

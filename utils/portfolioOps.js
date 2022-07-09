@@ -17,8 +17,12 @@ exports.getLatestPortfolio = async () => {
 		.on('close', async () => {
 			console.log('Finished reading data. Portfolio amounts:');
 			console.log(portfolio);
-			portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
-			console.log(portfolio);
+			try {
+				portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
+				console.log(portfolio);
+			} catch (err) {
+				console.log(err.message);
+			}
 		});
 };
 
@@ -27,7 +31,7 @@ exports.getPortfolioByDate = (thresholdDate) => {
 	let portfolio = {};
 
 	console.log('Reading CSV..');
-	fs.createReadStream('./_data/test.csv')
+	fs.createReadStream(TRANSACTIONS_PATH)
 		.pipe(csv())
 		.on('data', (data) => {
 			if (data.timestamp < timestampThreshold) {
@@ -37,8 +41,12 @@ exports.getPortfolioByDate = (thresholdDate) => {
 		.on('close', async () => {
 			console.log('Finished reading data. Portfolio amounts:');
 			console.log(portfolio);
-			portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
-			console.log(portfolio);
+			try {
+				portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
+				console.log(portfolio);
+			} catch (err) {
+				console.log(err.message);
+			}
 		});
 };
 
@@ -57,8 +65,12 @@ exports.getPortfolioByToken = (token) => {
 		.on('close', async () => {
 			console.log('Finished reading data. Portfolio amounts: ');
 			console.log(portfolio);
-			portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
-			console.log(portfolio);
+			try {
+				portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
+				console.log(portfolio);
+			} catch (err) {
+				console.log(err.message);
+			}
 		});
 };
 
@@ -68,7 +80,7 @@ exports.getPortfolioByTokenAndDate = (token, thresholdDate) => {
 	let portfolio = {};
 
 	console.log('Reading CSV..');
-	fs.createReadStream('./_data/test.csv')
+	fs.createReadStream(TRANSACTIONS_PATH)
 		.pipe(csv())
 		.on('data', (data) => {
 			if (data.timestamp < timestampThreshold && data.token === token) {
@@ -78,8 +90,12 @@ exports.getPortfolioByTokenAndDate = (token, thresholdDate) => {
 		.on('close', async () => {
 			console.log('Finished reading data. Portfolio amounts:');
 			console.log(portfolio);
-			portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
-			console.log(portfolio);
+			try {
+				portfolio = await calculateCurrencyPortfolio(portfolio, 'USD');
+				console.log(portfolio);
+			} catch (err) {
+				console.log(err.message);
+			}
 		});
 };
 
@@ -104,11 +120,8 @@ const calculatePortfolio = (currentPortfolio, transaction) => {
 
 const calculateCurrencyPortfolio = async (currentPortfolio, currency) => {
 	console.log(`Calculating ${currency} value of portfolio..`);
-
 	const updatedPortfolio = { ...currentPortfolio };
-
 	const tokens = Object.keys(updatedPortfolio).join(',');
-
 	const exchangeRate = await getConversionRate(tokens, currency);
 
 	for (const token in updatedPortfolio) {
